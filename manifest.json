@@ -1,0 +1,16 @@
+{
+  "name": "Insulina da Princesa",
+  "short_name": "Princesa 🌈",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffe4f2",
+  "theme_color": "#ff69b4",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

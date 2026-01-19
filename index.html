@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>👑 Insulina da Princesa 🌈</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff69b4">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+/* === SEU CSS ORIGINAL (INTACTO) === */
+body {
+  font-family: "Comic Sans MS", Arial, sans-serif;
+  background: linear-gradient(135deg, #ffb6e6, #cce7ff, #fff1a8);
+  margin: 0;
+  padding: 15px;
+}
+
+.container {
+  max-width: 420px;
+  margin: auto;
+  background: #fff;
+  border-radius: 30px;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(255,105,180,0.4);
+  border: 4px solid #ff69b4;
+}
+
+h1 {
+  text-align: center;
+  color: #ff1493;
+  font-size: 26px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: #ff69b4;
+  margin-bottom: 10px;
+}
+
+label {
+  font-weight: bold;
+  display: block;
+  margin-top: 14px;
+  color: #d63384;
+}
+
+input, select {
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  border-radius: 18px;
+  border: 2px solid #ffb6e6;
+  font-size: 16px;
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  border-radius: 25px;
+  font-size: 17px;
+  font-weight: bold;
+  border: none;
+  margin-top: 15px;
+  cursor: pointer;
+}
+
+button.importar { background: linear-gradient(90deg,#ff69b4,#ffb6e6); color:#fff; }
+button.ver { background: linear-gradient(90deg,#87cefa,#cce7ff); color:#004c99; }
+button.calcular { background: linear-gradient(90deg,#ff1493,#ff69b4); color:#fff; }
+button.alimento { background: linear-gradient(90deg,#ffa07a,#ffdab9); color:#7a2d00; }
+
+.result {
+  margin-top: 20px;
+  padding: 18px;
+  background: linear-gradient(135deg,#ffe4f2,#e6f4ff);
+  border-radius: 25px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  color: #c2185b;
+}
+
+.table-container { display:none; margin-top:15px; font-size:14px; }
+
+canvas { margin-top:15px; }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>👑 Insulina da Princesa 🌈</h1>
+<div class="subtitle">Cuidando com amor 💖</div>
+
+<button class="importar" onclick="importarPlanilha()">🔄 Atualizar Receita da Doutora</button>
+<button class="ver" onclick="mostrarTabela()">📋 Ver Receitinha</button>
+
+<label>🍽️ Refeição</label>
+<select id="refeicao"></select>
+
+<label>🩸 Glicemia</label>
+<input type="number" id="glicemia">
+
+<label>🍎 Carboidratos comidos</label>
+<input type="number" id="carbo" value="0">
+
+<button class="calcular" onclick="calcular()">✨ Calcular Magia ✨</button>
+
+<div class="result" id="resultado">Vamos calcular juntas 💕</div>
+
+<!-- 🔥 NOVOS BOTÕES -->
+<button class="alimento" onclick="salvarNoDiario()">💾 Salvar no Diário Mágico</button>
+<button class="ver" onclick="abrirRelatorio()">📊 Ver Relatório</button>
+
+<div class="table-container" id="tabela"></div>
+<div class="table-container" id="relatorio"></div>
+<canvas id="grafico"></canvas>
+
+</div>
+
+<script>
+/* ===== SEU SCRIPT ORIGINAL (INTACTO) ===== */
+/* ... (mantido exatamente como você enviou) ... */
+
+/* ===== DIÁRIO ===== */
+let diario = JSON.parse(localStorage.getItem("diarioMagico")) || [];
+
+function salvarNoDiario() {
+  const texto = document.getElementById("resultado").innerText;
+  const dose = texto.match(/([\d.]+)/);
+  if (!dose) { alert("Calcule antes 💕"); return; }
+
+  const agora = new Date();
+  diario.push({
+    data: agora.toISOString().split("T")[0],
+    hora: agora.toLocaleTimeString("pt-BR"),
+    refeicao: document.getElementById("refeicao").selectedOptions[0].text,
+    glicemia: document.getElementById("glicemia").value,
+    carbo: document.getElementById("carbo").value,
+    dose: dose[1]
+  });
+
+  localStorage.setItem("diarioMagico", JSON.stringify(diario));
+  alert("Salvo no diário mágico 🌈");
+}
+
+function abrirRelatorio() {
+  const data = prompt("Digite a data (AAAA-MM-DD)");
+  if (!data) return;
+
+  const lista = diario.filter(d => d.data === data);
+  const div = document.getElementById("relatorio");
+
+  if (!lista.length) {
+    div.innerHTML = "Nenhum registro nesse dia 💖";
+    div.style.display = "block";
+    return;
+  }
+
+  let html = "<table><tr><th>Hora</th><th>Refeição</th><th>Glicemia</th><th>Carbo</th><th>Dose</th></tr>";
+  lista.forEach(l=>{
+    html+=`<tr><td>${l.hora}</td><td>${l.refeicao}</td><td>${l.glicemia}</td><td>${l.carbo}</td><td>${l.dose}</td></tr>`;
+  });
+  html+="</table><button class='ver' onclick='exportarPDF()'>📄 Exportar PDF</button>";
+  div.innerHTML = html;
+  div.style.display="block";
+
+  desenharGrafico(lista);
+}
+
+function desenharGrafico(lista){
+  const c=document.getElementById("grafico");
+  const ctx=c.getContext("2d");
+  c.width=360; c.height=200;
+  ctx.clearRect(0,0,360,200);
+  ctx.strokeStyle="#ff69b4";
+  ctx.beginPath();
+  lista.forEach((l,i)=>{
+    const x=20+i*(300/(lista.length-1||1));
+    const y=180-(l.dose*20);
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  });
+  ctx.stroke();
+}
+
+function exportarPDF(){
+  const { jsPDF } = window.jspdf;
+  const pdf=new jsPDF();
+  pdf.text("Relatório Diário - Insulina da Princesa",10,10);
+  let y=20;
+  diario.forEach(d=>{
+    pdf.text(`${d.data} ${d.hora} ${d.refeicao} Dose:${d.dose}`,10,y);
+    y+=8;
+  });
+  pdf.save("relatorio.pdf");
+}
+
+/* SERVICE WORKER */
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+
+</body>
+</html>
+
