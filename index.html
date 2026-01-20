@@ -5,13 +5,11 @@
 <title>👑 Insulina da Princesa 🌈</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ff69b4">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <style>
-/* === SEU CSS ORIGINAL (INTACTO) === */
 body {
   font-family: "Comic Sans MS", Arial, sans-serif;
   background: linear-gradient(135deg, #ffb6e6, #cce7ff, #fff1a8);
@@ -69,15 +67,30 @@ button {
   cursor: pointer;
 }
 
-button.importar { background: linear-gradient(90deg,#ff69b4,#ffb6e6); color:#fff; }
-button.ver { background: linear-gradient(90deg,#87cefa,#cce7ff); color:#004c99; }
-button.calcular { background: linear-gradient(90deg,#ff1493,#ff69b4); color:#fff; }
-button.alimento { background: linear-gradient(90deg,#ffa07a,#ffdab9); color:#7a2d00; }
+button.importar {
+  background: linear-gradient(90deg, #ff69b4, #ffb6e6);
+  color: #fff;
+}
+
+button.ver {
+  background: linear-gradient(90deg, #87cefa, #cce7ff);
+  color: #004c99;
+}
+
+button.calcular {
+  background: linear-gradient(90deg, #ff1493, #ff69b4);
+  color: #fff;
+}
+
+button.alimento {
+  background: linear-gradient(90deg, #ffa07a, #ffdab9);
+  color: #7a2d00;
+}
 
 .result {
   margin-top: 20px;
   padding: 18px;
-  background: linear-gradient(135deg,#ffe4f2,#e6f4ff);
+  background: linear-gradient(135deg, #ffe4f2, #e6f4ff);
   border-radius: 25px;
   text-align: center;
   font-size: 20px;
@@ -85,120 +98,227 @@ button.alimento { background: linear-gradient(90deg,#ffa07a,#ffdab9); color:#7a2
   color: #c2185b;
 }
 
-.table-container { display:none; margin-top:15px; font-size:14px; }
+.table-container {
+  display: none;
+  margin-top: 15px;
+  font-size: 14px;
+}
 
-canvas { margin-top:15px; }
+#cadastroAlimento {
+  display: none;
+  margin-top: 10px;
+  padding: 12px;
+  background: #fff5fb;
+  border-radius: 20px;
+}
 </style>
 </head>
 
 <body>
+
 <div class="container">
+  <h1>👑 Insulina da Princesa 🌈</h1>
+  <div class="subtitle">Cuidando com amor 💖</div>
 
-<h1>👑 Insulina da Princesa 🌈</h1>
-<div class="subtitle">Cuidando com amor 💖</div>
+  <button class="importar" onclick="importarPlanilha()">🔄 Atualizar Receita da Doutora</button>
+  <button class="ver" onclick="mostrarTabela()">📋 Ver Receitinha</button>
 
-<button class="importar" onclick="importarPlanilha()">🔄 Atualizar Receita da Doutora</button>
-<button class="ver" onclick="mostrarTabela()">📋 Ver Receitinha</button>
+  <label>🍽️ Refeição</label>
+  <select id="refeicao"></select>
 
-<label>🍽️ Refeição</label>
-<select id="refeicao"></select>
+  <label>🩸 Glicemia</label>
+  <input type="number" id="glicemia">
 
-<label>🩸 Glicemia</label>
-<input type="number" id="glicemia">
+  <label>🍎 Carboidratos comidos</label>
+  <input type="number" id="carbo" value="0">
 
-<label>🍎 Carboidratos comidos</label>
-<input type="number" id="carbo" value="0">
+  <!-- 🍓 ALIMENTOS -->
+  <button class="alimento" onclick="toggleCadastro()">🍓 Cadastrar alimento</button>
 
-<button class="calcular" onclick="calcular()">✨ Calcular Magia ✨</button>
+  <div id="cadastroAlimento">
+    <input id="nomeAlimento" placeholder="Nome do alimento">
+    <input id="unidadeAlimento" placeholder="Unidade (ex: colher)">
+    <input id="carboAlimento" type="number" placeholder="Carbo por unidade (g)">
+    <button class="alimento" onclick="salvarAlimento()">💾 Salvar alimento</button>
 
-<div class="result" id="resultado">Vamos calcular juntas 💕</div>
+    <hr>
 
-<!-- 🔥 NOVOS BOTÕES -->
-<button class="alimento" onclick="salvarNoDiario()">💾 Salvar no Diário Mágico</button>
-<button class="ver" onclick="abrirRelatorio()">📊 Ver Relatório</button>
+    <select id="listaAlimentos"></select>
+    <input id="quantidadeAlimento" type="number" placeholder="Quantidade">
+    <button class="alimento" onclick="usarAlimento()">➕ Usar alimento</button>
+  </div>
 
-<div class="table-container" id="tabela"></div>
-<div class="table-container" id="relatorio"></div>
-<canvas id="grafico"></canvas>
+  <button class="calcular" onclick="calcular()">✨ Calcular Magia ✨</button>
 
+  <div class="result" id="resultado">Vamos calcular juntas 💕</div>
+
+  <div class="table-container" id="tabela"></div>
 </div>
 
 <script>
-/* ===== SEU SCRIPT ORIGINAL (INTACTO) ===== */
-/* ... (mantido exatamente como você enviou) ... */
+/* LINK CSV DA PLANILHA */
+const LINK_PLANILHA =
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vT9gdt_es77YBpU13wanXJom_PP0Y5GljpaMJ4eAcE8IudX-5bU7LZRynq84S3RGESdARd7bbl13oxS/pub?output=csv";
 
-/* ===== DIÁRIO ===== */
-let diario = JSON.parse(localStorage.getItem("diarioMagico")) || [];
+let dados = [];
+let tabelaVisivel = false;
 
-function salvarNoDiario() {
-  const texto = document.getElementById("resultado").innerText;
-  const dose = texto.match(/([\d.]+)/);
-  if (!dose) { alert("Calcule antes 💕"); return; }
+/* ===== ALIMENTOS ===== */
+let alimentos = JSON.parse(localStorage.getItem("alimentos")) || [];
 
-  const agora = new Date();
-  diario.push({
-    data: agora.toISOString().split("T")[0],
-    hora: agora.toLocaleTimeString("pt-BR"),
-    refeicao: document.getElementById("refeicao").selectedOptions[0].text,
-    glicemia: document.getElementById("glicemia").value,
-    carbo: document.getElementById("carbo").value,
-    dose: dose[1]
-  });
-
-  localStorage.setItem("diarioMagico", JSON.stringify(diario));
-  alert("Salvo no diário mágico 🌈");
+function toggleCadastro() {
+  const div = document.getElementById("cadastroAlimento");
+  div.style.display = div.style.display === "none" ? "block" : "none";
 }
 
-function abrirRelatorio() {
-  const data = prompt("Digite a data (AAAA-MM-DD)");
-  if (!data) return;
+function salvarAlimento() {
+  const nome = document.getElementById("nomeAlimento").value;
+  const unidade = document.getElementById("unidadeAlimento").value;
+  const carbo = Number(document.getElementById("carboAlimento").value);
 
-  const lista = diario.filter(d => d.data === data);
-  const div = document.getElementById("relatorio");
-
-  if (!lista.length) {
-    div.innerHTML = "Nenhum registro nesse dia 💖";
-    div.style.display = "block";
+  if (!nome || !unidade || carbo <= 0) {
+    alert("Preencha corretamente 💕");
     return;
   }
 
-  let html = "<table><tr><th>Hora</th><th>Refeição</th><th>Glicemia</th><th>Carbo</th><th>Dose</th></tr>";
-  lista.forEach(l=>{
-    html+=`<tr><td>${l.hora}</td><td>${l.refeicao}</td><td>${l.glicemia}</td><td>${l.carbo}</td><td>${l.dose}</td></tr>`;
+  alimentos.push({ nome, unidade, carbo });
+  localStorage.setItem("alimentos", JSON.stringify(alimentos));
+
+  document.getElementById("nomeAlimento").value = "";
+  document.getElementById("unidadeAlimento").value = "";
+  document.getElementById("carboAlimento").value = "";
+
+  atualizarListaAlimentos();
+  alert("Alimento salvo 🌈");
+}
+
+function atualizarListaAlimentos() {
+  const select = document.getElementById("listaAlimentos");
+  select.innerHTML = "";
+  alimentos.forEach((a, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.text = `${a.nome} (${a.unidade})`;
+    select.add(opt);
   });
-  html+="</table><button class='ver' onclick='exportarPDF()'>📄 Exportar PDF</button>";
+}
+
+function usarAlimento() {
+  const idx = document.getElementById("listaAlimentos").value;
+  const qtd = Number(document.getElementById("quantidadeAlimento").value);
+  if (idx === "" || qtd <= 0) return;
+
+  const total = alimentos[idx].carbo * qtd;
+  const campoCarbo = document.getElementById("carbo");
+  campoCarbo.value = Number(campoCarbo.value) + total;
+
+  document.getElementById("quantidadeAlimento").value = "";
+}
+
+/* ===== PLANILHA ===== */
+async function importarPlanilha() {
+  try {
+    const res = await fetch(LINK_PLANILHA, { cache: "no-store" });
+    const texto = await res.text();
+    const linhas = texto.trim().split("\n");
+
+    dados = linhas.slice(1).map(l => {
+      const c = l.split(",");
+      return {
+        refeicao: c[0],
+        cho: parseFloat(c[2]),
+        meta: parseFloat(c[3]),
+        fs: parseFloat(c[4])
+      };
+    });
+
+    localStorage.setItem("prescricao", JSON.stringify(dados));
+    carregarRefeicoes();
+    esconderTabela();
+
+    alert("Receitinha atualizada com sucesso 💖");
+  } catch {
+    alert("Sem internet 🌧️ Usando a última receitinha salva");
+    carregarLocal();
+  }
+}
+
+function carregarLocal() {
+  const salvo = localStorage.getItem("prescricao");
+  if (salvo) {
+    dados = JSON.parse(salvo);
+    carregarRefeicoes();
+  }
+}
+
+function carregarRefeicoes() {
+  const select = document.getElementById("refeicao");
+  select.innerHTML = "";
+  dados.forEach((d, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.text = d.refeicao;
+    select.add(opt);
+  });
+}
+
+/* ===== CALCULAR ===== */
+function calcular() {
+  if (dados.length === 0) carregarLocal();
+  if (dados.length === 0) return;
+
+  const idx = document.getElementById("refeicao").value;
+  const glicemiaValor = Number(document.getElementById("glicemia").value);
+  const carboValor = Number(document.getElementById("carbo").value);
+
+  const d = dados[idx];
+  let dose = (glicemiaValor - d.meta) / d.fs;
+
+  if (carboValor > 0) {
+    dose += (carboValor / d.cho) * 0.5;
+  }
+
+  dose = Math.floor(dose * 2) / 2;
+  if (dose < 0) dose = 0;
+
+  document.getElementById("resultado").innerHTML =
+    `💉 Dose mágica:<br><b>${dose} unidades</b> ✨`;
+}
+
+/* ===== TABELA ===== */
+function mostrarTabela() {
+  if (dados.length === 0) carregarLocal();
+  if (dados.length === 0) return;
+
+  const div = document.getElementById("tabela");
+
+  if (tabelaVisivel) {
+    div.style.display = "none";
+    tabelaVisivel = false;
+    return;
+  }
+
+  let html = "<table><tr><th>🍽️ Refeição</th><th>🥖 CHO</th><th>🎯 Meta</th><th>🧮 FS</th></tr>";
+  dados.forEach(d => {
+    html += `<tr><td>${d.refeicao}</td><td>${d.cho}</td><td>${d.meta}</td><td>${d.fs}</td></tr>`;
+  });
+  html += "</table>";
+
   div.innerHTML = html;
-  div.style.display="block";
-
-  desenharGrafico(lista);
+  div.style.display = "block";
+  tabelaVisivel = true;
 }
 
-function desenharGrafico(lista){
-  const c=document.getElementById("grafico");
-  const ctx=c.getContext("2d");
-  c.width=360; c.height=200;
-  ctx.clearRect(0,0,360,200);
-  ctx.strokeStyle="#ff69b4";
-  ctx.beginPath();
-  lista.forEach((l,i)=>{
-    const x=20+i*(300/(lista.length-1||1));
-    const y=180-(l.dose*20);
-    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
-  });
-  ctx.stroke();
+function esconderTabela() {
+  document.getElementById("tabela").style.display = "none";
+  tabelaVisivel = false;
 }
 
-function exportarPDF(){
-  const { jsPDF } = window.jspdf;
-  const pdf=new jsPDF();
-  pdf.text("Relatório Diário - Insulina da Princesa",10,10);
-  let y=20;
-  diario.forEach(d=>{
-    pdf.text(`${d.data} ${d.hora} ${d.refeicao} Dose:${d.dose}`,10,y);
-    y+=8;
-  });
-  pdf.save("relatorio.pdf");
-}
+/* ===== INIT ===== */
+window.onload = () => {
+  carregarLocal();
+  atualizarListaAlimentos();
+};
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
@@ -208,4 +328,3 @@ if ("serviceWorker" in navigator) {
 
 </body>
 </html>
-
