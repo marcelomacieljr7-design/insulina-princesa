@@ -25,6 +25,8 @@ body {
   padding: 20px;
   box-shadow: 0 8px 20px rgba(255,105,180,0.4);
   border: 4px solid #ff69b4;
+  position: relative;
+  overflow: hidden;
 }
 
 h1 {
@@ -111,12 +113,26 @@ button.alimento {
   background: #fff5fb;
   border-radius: 20px;
 }
+
+/* ✨ EFEITO DE MAGIA ✨ */
+.magic {
+  position: absolute;
+  font-size: 26px;
+  animation: subir 1.5s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes subir {
+  0% { opacity: 0; transform: translateY(20px) scale(0.5); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-120px) scale(1.5); }
+}
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="container" id="container">
   <h1>👑 Insulina da Princesa 🌈</h1>
   <div class="subtitle">Cuidando com amor 💖</div>
 
@@ -132,7 +148,6 @@ button.alimento {
   <label>🍎 Carboidratos comidos</label>
   <input type="number" id="carbo" value="0">
 
-  <!-- 🍓 ALIMENTOS -->
   <button class="alimento" onclick="toggleCadastro()">🍓 Cadastrar alimento</button>
 
   <div id="cadastroAlimento">
@@ -150,18 +165,36 @@ button.alimento {
 
   <button class="calcular" onclick="calcular()">✨ Calcular Magia ✨</button>
 
-  <div class="result" id="resultado">Vamos calcular juntas 💕</div>
+  <div class="result" id="resultado">
+    🦄🌈 Pronta para a magia dos bichinhos encantados? 💖🐰
+  </div>
 
   <div class="table-container" id="tabela"></div>
 </div>
 
 <script>
-/* LINK CSV DA PLANILHA */
 const LINK_PLANILHA =
 "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9gdt_es77YBpU13wanXJom_PP0Y5GljpaMJ4eAcE8IudX-5bU7LZRynq84S3RGESdARd7bbl13oxS/pub?output=csv";
 
 let dados = [];
 let tabelaVisivel = false;
+
+/* ===== EFEITO MÁGICO ===== */
+function efeitoMagia() {
+  const emojis = ["✨","🌈","🦄","💖","⭐","🪄","🐰"];
+  const container = document.getElementById("container");
+
+  for (let i = 0; i < 8; i++) {
+    const span = document.createElement("span");
+    span.className = "magic";
+    span.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+    span.style.left = Math.random() * 80 + "%";
+    span.style.bottom = "20px";
+    container.appendChild(span);
+
+    setTimeout(() => span.remove(), 1500);
+  }
+}
 
 /* ===== ALIMENTOS ===== */
 let alimentos = JSON.parse(localStorage.getItem("alimentos")) || [];
@@ -172,9 +205,9 @@ function toggleCadastro() {
 }
 
 function salvarAlimento() {
-  const nome = document.getElementById("nomeAlimento").value;
-  const unidade = document.getElementById("unidadeAlimento").value;
-  const carbo = Number(document.getElementById("carboAlimento").value);
+  const nome = nomeAlimento.value;
+  const unidade = unidadeAlimento.value;
+  const carbo = Number(carboAlimento.value);
 
   if (!nome || !unidade || carbo <= 0) {
     alert("Preencha corretamente 💕");
@@ -184,35 +217,31 @@ function salvarAlimento() {
   alimentos.push({ nome, unidade, carbo });
   localStorage.setItem("alimentos", JSON.stringify(alimentos));
 
-  document.getElementById("nomeAlimento").value = "";
-  document.getElementById("unidadeAlimento").value = "";
-  document.getElementById("carboAlimento").value = "";
+  nomeAlimento.value = "";
+  unidadeAlimento.value = "";
+  carboAlimento.value = "";
 
   atualizarListaAlimentos();
   alert("Alimento salvo 🌈");
 }
 
 function atualizarListaAlimentos() {
-  const select = document.getElementById("listaAlimentos");
-  select.innerHTML = "";
+  listaAlimentos.innerHTML = "";
   alimentos.forEach((a, i) => {
     const opt = document.createElement("option");
     opt.value = i;
     opt.text = `${a.nome} (${a.unidade})`;
-    select.add(opt);
+    listaAlimentos.add(opt);
   });
 }
 
 function usarAlimento() {
-  const idx = document.getElementById("listaAlimentos").value;
-  const qtd = Number(document.getElementById("quantidadeAlimento").value);
+  const idx = listaAlimentos.value;
+  const qtd = Number(quantidadeAlimento.value);
   if (idx === "" || qtd <= 0) return;
 
-  const total = alimentos[idx].carbo * qtd;
-  const campoCarbo = document.getElementById("carbo");
-  campoCarbo.value = Number(campoCarbo.value) + total;
-
-  document.getElementById("quantidadeAlimento").value = "";
+  carbo.value = Number(carbo.value) + alimentos[idx].carbo * qtd;
+  quantidadeAlimento.value = "";
 }
 
 /* ===== PLANILHA ===== */
@@ -224,21 +253,14 @@ async function importarPlanilha() {
 
     dados = linhas.slice(1).map(l => {
       const c = l.split(",");
-      return {
-        refeicao: c[0],
-        cho: parseFloat(c[2]),
-        meta: parseFloat(c[3]),
-        fs: parseFloat(c[4])
-      };
+      return { refeicao: c[0], cho: +c[2], meta: +c[3], fs: +c[4] };
     });
 
     localStorage.setItem("prescricao", JSON.stringify(dados));
     carregarRefeicoes();
     esconderTabela();
-
-    alert("Receitinha atualizada com sucesso 💖");
+    alert("Receitinha atualizada 💖");
   } catch {
-    alert("Sem internet 🌧️ Usando a última receitinha salva");
     carregarLocal();
   }
 }
@@ -252,37 +274,31 @@ function carregarLocal() {
 }
 
 function carregarRefeicoes() {
-  const select = document.getElementById("refeicao");
-  select.innerHTML = "";
+  refeicao.innerHTML = "";
   dados.forEach((d, i) => {
     const opt = document.createElement("option");
     opt.value = i;
     opt.text = d.refeicao;
-    select.add(opt);
+    refeicao.add(opt);
   });
 }
 
 /* ===== CALCULAR ===== */
 function calcular() {
+  efeitoMagia();
+
   if (dados.length === 0) carregarLocal();
   if (dados.length === 0) return;
 
-  const idx = document.getElementById("refeicao").value;
-  const glicemiaValor = Number(document.getElementById("glicemia").value);
-  const carboValor = Number(document.getElementById("carbo").value);
+  const d = dados[refeicao.value];
+  let dose = (glicemia.value - d.meta) / d.fs;
 
-  const d = dados[idx];
-  let dose = (glicemiaValor - d.meta) / d.fs;
-
-  if (carboValor > 0) {
-    dose += (carboValor / d.cho) * 0.5;
-  }
+  if (carbo.value > 0) dose += (carbo.value / d.cho) * 0.5;
 
   dose = Math.floor(dose * 2) / 2;
   if (dose < 0) dose = 0;
 
-  document.getElementById("resultado").innerHTML =
-    `💉 Dose mágica:<br><b>${dose} unidades</b> ✨`;
+  resultado.innerHTML = `💉 Dose mágica:<br><b>${dose} unidades</b> ✨🦄`;
 }
 
 /* ===== TABELA ===== */
@@ -290,37 +306,33 @@ function mostrarTabela() {
   if (dados.length === 0) carregarLocal();
   if (dados.length === 0) return;
 
-  const div = document.getElementById("tabela");
-
   if (tabelaVisivel) {
-    div.style.display = "none";
+    tabela.style.display = "none";
     tabelaVisivel = false;
     return;
   }
 
-  let html = "<table><tr><th>🍽️ Refeição</th><th>🥖 CHO</th><th>🎯 Meta</th><th>🧮 FS</th></tr>";
+  let html = "<table><tr><th>🍽️</th><th>🥖</th><th>🎯</th><th>🧮</th></tr>";
   dados.forEach(d => {
     html += `<tr><td>${d.refeicao}</td><td>${d.cho}</td><td>${d.meta}</td><td>${d.fs}</td></tr>`;
   });
   html += "</table>";
 
-  div.innerHTML = html;
-  div.style.display = "block";
+  tabela.innerHTML = html;
+  tabela.style.display = "block";
   tabelaVisivel = true;
 }
 
 function esconderTabela() {
-  document.getElementById("tabela").style.display = "none";
+  tabela.style.display = "none";
   tabelaVisivel = false;
 }
 
-/* ===== INIT ===== */
 window.onload = () => {
   carregarLocal();
   atualizarListaAlimentos();
 };
 
-/* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("service-worker.js");
 }
