@@ -361,7 +361,8 @@ async function salvarDiario() {
     data: new Date().toLocaleString("pt-BR"),
     refeicao: d.refeicao,
     glicemia: glicemia.value,
-    carboidratos: carbo.value,
+    carboidratos: Number(carbo.value) || 0,
+
     dose: dose
   };
 
