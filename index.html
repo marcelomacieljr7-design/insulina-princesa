@@ -148,6 +148,8 @@ button.alimento {
   <label>🍎 Carboidratos comidos</label>
   <input type="number" id="carbo" value="0">
 
+  <button class="calcular" onclick="calcular()">✨ Calcular Magia ✨</button>
+
   <button class="alimento" onclick="toggleCadastro()">🍓 Cadastrar alimento</button>
 
   <div id="cadastroAlimento">
@@ -163,9 +165,10 @@ button.alimento {
     <button class="alimento" onclick="usarAlimento()">➕ Usar alimento</button>
   </div>
 
-  <button class="calcular" onclick="calcular()">✨ Calcular Magia ✨</button>
+<button class="ver" id="btnSalvar" onclick="salvarDiario()" disabled style="opacity:0.5">
+  💾 Salvar no diário mágico
+</button>
 
-<button class="ver" onclick="salvarDiario()">💾 Salvar no diário mágico</button>
 
 
   <div class="result" id="resultado">
@@ -308,6 +311,8 @@ function calcular() {
   if (dose < 0) dose = 0;
 
   resultado.innerHTML = `💉 Dose mágica:<br><b>${dose} unidades</b> ✨🦄`;
+ document.getElementById("btnSalvar").disabled = false;
+  document.getElementById("btnSalvar").style.opacity = 1;
 }
 
 /* ===== TABELA ===== */
